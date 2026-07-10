@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Case Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="header-inner">
+            <div>
+                <h1>Lab Case Tracker</h1>
+                <p class="tagline">Live from Google Sheets</p>
+            </div>
+            <div class="header-buttons">
+                <button class="btn btn-ghost" onclick="loadCases()">&#8635; Refresh</button>
+                <button class="btn btn-accent" onclick="toggleForm()">+ New Case</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- STATS -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-num" id="statOpen">—</div>
+            <div class="stat-lbl">Open</div>
+        </div>
+        <div class="stat-card warn">
+            <div class="stat-num" id="statOverdue">—</div>
+            <div class="stat-lbl">Overdue</div>
+        </div>
+        <div class="stat-card alert">
+            <div class="stat-num" id="statDueSoon">—</div>
+            <div class="stat-lbl">Due This Week</div>
+        </div>
+        <div class="stat-card good">
+            <div class="stat-num" id="statReady">—</div>
+            <div class="stat-lbl">Ready to Seat</div>
+        </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filters">
+        <select id="fltDoctor" onchange="render()"><option value="">All Doctors</option></select>
+        <select id="fltLab" onchange="render()"><option value="">All Labs</option></select>
+        <select id="fltType" onchange="render()"><option value="">All Types</option></select>
+    </div>
+
+    <!-- ADD CASE FORM -->
+    <div id="formWrap" class="form-wrap hide">
+        <div class="form-card">
+            <h2>New Lab Case</h2>
+            <div class="form-row">
+                <div class="field">
+                    <label>Patient</label>
+                    <input id="inPatient" type="text" placeholder="Last, First">
+                </div>
+                <div class="field">
+                    <label>Doctor</label>
+                    <input id="inDoctor" type="text" placeholder="Dr. name">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field">
+                    <label>Case Type</label>
+                    <select id="inType">
+                        <option>Crown</option>
+                        <option>Bridge</option>
+                        <option>Veneers</option>
+                        <option>Denture</option>
+                        <option>Partial</option>
+                        <option>Implant Crown</option>
+                        <option>Implant Abutment</option>
+                        <option>Night Guard</option>
+                        <option>Retainer</option>
+                        <option>Inlay/Onlay</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Shade</label>
+                    <input id="inShade" type="text" placeholder="A2, 2M2, etc.">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field">
+                    <label>Lab</label>
+                    <input id="inLab" type="text" placeholder="Lab name">
+                </div>
+                <div class="field">
+                    <label>Date Sent</label>
+                    <input id="inSent" type="date">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field">
+                    <label>Due Date</label>
+                    <input id="inDue" type="date">
+                </div>
+                <div class="field">
+                    <label>Notes</label>
+                    <input id="inNotes" type="text" placeholder="Special instructions">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-accent" onclick="addCase()">Add Case</button>
+                <button class="btn btn-ghost" onclick="toggleForm()">Cancel</button>
+            </div>
+            <p id="formMsg" class="form-msg"></p>
+        </div>
+    </div>
+
+    <!-- BOARD -->
+    <div class="board">
+        <div class="col">
+            <div class="col-head col-sent"><span class="dot dot-sent"></span>Sent<span class="badge" id="cntSent">0</span></div>
+            <div class="col-body" id="colSent"></div>
+        </div>
+        <div class="col">
+            <div class="col-head col-atlab"><span class="dot dot-atlab"></span>At Lab<span class="badge" id="cntAtLab">0</span></div>
+            <div class="col-body" id="colAtLab"></div>
+        </div>
+        <div class="col">
+            <div class="col-head col-recv"><span class="dot dot-recv"></span>Received<span class="badge" id="cntRecv">0</span></div>
+            <div class="col-body" id="colRecv"></div>
+        </div>
+        <div class="col">
+            <div class="col-head col-seat"><span class="dot dot-seat"></span>Seated<span class="badge" id="cntSeat">0</span></div>
+            <div class="col-body" id="colSeat"></div>
+        </div>
+    </div>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loader" class="loader hide">
+        <div class="spin"></div>
+        <p>Loading cases…</p>
+    </div>
+
+    <!-- ERROR STATE -->
+    <div id="errorBanner" class="error-banner hide">
+        <p id="errorMsg"></p>
+        <button class="btn btn-ghost" onclick="hideError()">Dismiss</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
