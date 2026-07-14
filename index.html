@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoboken Scan Logger</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 900: '#0c4a6e' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f8fafc; color: #334155; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .input-field { transition: all 0.2s ease; }
+        .input-field:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        th.sortable { cursor: pointer; user-select: none; transition: background-color 0.2s; }
+        th.sortable:hover { background-color: #f1f5f9; }
+        .sort-icon { display: inline-block; margin-left: 4px; opacity: 0.3; transition: all 0.2s; }
+        th.asc .sort-icon { opacity: 1; transform: rotate(180deg); color: #0ea5e9; }
+        th.desc .sort-icon { opacity: 1; transform: rotate(0deg); color: #0ea5e9; }
+    </style>
+</head>
+<body class="font-sans h-screen flex flex-col overflow-hidden selection:bg-brand-100 selection:text-brand-900">
+
+    <!-- Top Navigation -->
+    <header class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shrink-0 z-10">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600 border border-brand-100">
+                <i class="ph-fill ph-tooth text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-slate-800 leading-tight">Digital Lab Tracker</h1>
+                <p class="text-xs font-medium text-slate-500 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                    Hoboken Clinic • Privacy Compliant
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <div class="hidden md:flex flex-col items-end mr-2">
+                <span class="text-sm font-semibold text-slate-700">Dr. Hoboken</span>
+                <span class="text-xs text-slate-500">Admin</span>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-200 transition-colors">
+                DH
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6 xl:gap-8">
+
+            <!-- Left Column: Data Entry Form -->
+            <div class="xl:col-span-4 space-y-6">
+
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pending</span>
+                            <i class="ph-fill ph-clock-counter-clockwise text-amber-500 text-lg"></i>
+                        </div>
+                        <p class="text-xl font-bold text-slate-800" id="pendingCount">0</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ready</span>
+                            <i class="ph-fill ph-check-circle text-emerald-500 text-lg"></i>
+                        </div>
+                        <p class="text-xl font-bold text-slate-800" id="readyCount">0</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-2xl border border-red-200 shadow-sm bg-red-50/30">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-bold text-red-600 uppercase tracking-wider">Overdue</span>
+                            <i class="ph-fill ph-warning-circle text-red-500 text-lg"></i>
+                        </div>
+                        <p class="text-xl font-bold text-red-700" id="overdueCount">0</p>
+                    </div>
+                </div>
+
+                <!-- Form Card -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                            <i class="ph-bold ph-plus"></i> New Lab Case
+                        </h2>
+                    </div>
+
+                    <form id="logForm" class="p-6 space-y-4">
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-semibold text-slate-600 block">Patient Initials</label>
+                                <input type="text" id="initials" required maxlength="3" placeholder="e.g., JD"
+                                    class="input-field w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 uppercase placeholder-slate-400 font-medium">
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-semibold text-slate-600 block">DOB (MM/YY)</label>
+                                <input type="text" id="dob" required placeholder="08/85"
+                                    class="input-field w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 font-medium text-center">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-semibold text-slate-600 block">Case Type</label>
+                            <div class="relative">
+                                <select id="caseType" required class="input-field w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-medium appearance-none cursor-pointer">
+                                    <option value="" disabled selected>Select restoration type...</option>
+                                    <option value="aligners">Clear Aligners (Invisalign)</option>
+                                    <option value="crown">Crown / Bridge</option>
+                                    <option value="implant">Implant Restoration</option>
+                                    <option value="nightguard">Nightguard / Splint</option>
+                                    <option value="denture">Denture / Partial</option>
+                                </select>
+                                <i class="ph-bold ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-semibold text-slate-600 block">Date Sent</label>
+                                <input type="date" id="dateSent" required
+                                    class="input-field w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-medium text-sm">
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-semibold text-slate-600 block">Expected Return</label>
+                                <input type="date" id="dateExpected" required
+                                    class="input-field w-full px-3 py-2 bg-amber-50/30 border border-slate-200 rounded-lg text-slate-800 font-medium text-sm">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-semibold text-slate-600 block flex items-center gap-1">
+                                Notes <span class="text-slate-400 font-normal">(Optional)</span>
+                            </label>
+                            <input type="text" id="notes" placeholder="e.g., Repair, remake, rush case..."
+                                class="input-field w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 font-medium text-sm">
+                        </div>
+
+                        <div class="space-y-1.5 pt-2">
+                            <label class="text-xs font-semibold text-slate-600 block">Current Status</label>
+                            <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-lg">
+                                <label class="cursor-pointer text-center">
+                                    <input type="radio" name="status" value="sent" checked class="peer sr-only">
+                                    <div class="py-2 px-3 rounded-md text-xs font-bold text-slate-500 peer-checked:bg-white peer-checked:text-brand-600 peer-checked:shadow-sm transition-all">
+                                        Sent to Lab
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer text-center">
+                                    <input type="radio" name="status" value="returned" class="peer sr-only">
+                                    <div class="py-2 px-3 rounded-md text-xs font-bold text-slate-500 peer-checked:bg-white peer-checked:text-emerald-600 peer-checked:shadow-sm transition-all">
+                                        Received at Office
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg shadow-sm shadow-brand-200 transition-colors flex justify-center items-center gap-2">
+                                <i class="ph-bold ph-plus-circle text-lg"></i> Add to Registry
+                            </button>
+                            <p id="feedbackMsg" class="text-xs text-center mt-3 font-medium opacity-0 transition-opacity h-4"></p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Column: Database Table -->
+            <div class="xl:col-span-8">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col min-h-[500px]">
+
+                    <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white">
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <div class="relative w-full sm:w-72">
+                                <i class="ph-bold ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                <input type="text" id="searchInput" placeholder="Search initials or notes..." class="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 w-full transition-all">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap" id="dataTable">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-xs uppercase tracking-wider sortable" data-sort="initials">
+                                        Patient <i class="ph-bold ph-caret-down sort-icon"></i>
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-xs uppercase tracking-wider sortable" data-sort="type">
+                                        Type & Notes <i class="ph-bold ph-caret-down sort-icon"></i>
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-xs uppercase tracking-wider sortable desc" data-sort="date">
+                                        Expected Return <i class="ph-bold ph-caret-down sort-icon"></i>
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-xs uppercase tracking-wider sortable" data-sort="status">
+                                        Status <i class="ph-bold ph-caret-down sort-icon"></i>
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-xs uppercase tracking-wider text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logTableBody" class="divide-y divide-slate-100 bg-white">
+
+                                <!-- Pending & Overdue Cases -->
+                                <tr class="hover:bg-slate-50 transition-colors group" data-initials="JD" data-type="Crown / Bridge" data-date="2026-07-10" data-status="0" data-notes="Rush - Patient traveling">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-bold flex items-center justify-center text-xs">JD</div>
+                                            <div>
+                                                <div class="font-bold text-slate-800 initials-text">JD</div>
+                                                <div class="text-[11px] text-slate-500">Sent: Jun 26, 2026</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col">
+                                            <span class="inline-flex items-center gap-1.5 text-slate-700 font-medium"><div class="w-2 h-2 rounded-full bg-purple-500"></div> Crown / Bridge</span>
+                                            <span class="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-medium"><i class="ph-fill ph-chat-circle-text"></i> Rush - Patient traveling</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center gap-1.5 text-red-600 font-bold bg-red-50 px-2.5 py-1 rounded-md border border-red-100"><i class="ph-fill ph-warning-circle"></i> Jul 10, 2026</span>
+                                    </td>
+                                    <td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">Sent to Lab</span></td>
+                                    <td class="px-6 py-4 text-right"><button class="text-slate-400 hover:text-brand-600 transition-colors p-1" title="Mark as Received"><i class="ph-bold ph-arrow-arc-right text-lg"></i></button></td>
+                                </tr>
+
+                                <tr class="hover:bg-slate-50 transition-colors group" data-initials="LM" data-type="Nightguard" data-date="2026-07-12" data-status="0" data-notes="">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs">LM</div>
+                                            <div>
+                                                <div class="font-bold text-slate-800 initials-text">LM</div>
+                                                <div class="text-[11px] text-slate-500">Sent: Jun 28, 2026</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-slate-700 font-medium"><div class="w-2 h-2 rounded-full bg-indigo-500"></div> Nightguard</span></td>
+                                    <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-red-600 font-bold bg-red-50 px-2.5 py-1 rounded-md border border-red-100"><i class="ph-fill ph-warning-circle"></i> Jul 12, 2026</span></td>
+                                    <td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">Sent to Lab</span></td>
+                                    <td class="px-6 py-4 text-right"><button class="text-slate-400 hover:text-brand-600 transition-colors p-1" title="Mark as Received"><i class="ph-bold ph-arrow-arc-right text-lg"></i></button></td>
+                                </tr>
+
+                                <!-- Pending & On Time Cases -->
+                                <tr class="hover:bg-slate-50 transition-colors group" data-initials="AW" data-type="Clear Aligners" data-date="2026-07-15" data-status="0" data-notes="Refinement scans">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-cyan-100 text-cyan-700 font-bold flex items-center justify-center text-xs">AW</div>
+                                            <div>
+                                                <div class="font-bold text-slate-800 initials-text">AW</div>
+                                                <div class="text-[11px] text-slate-500">Sent: Jul 01, 2026</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col">
+                                            <span class="inline-flex items-center gap-1.5 text-slate-700 font-medium"><div class="w-2 h-2 rounded-full bg-cyan-500"></div> Clear Aligners</span>
+                                            <span class="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-medium"><i class="ph-fill ph-chat-circle-text"></i> Refinement scans</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-slate-700 font-medium">Jul 15, 2026</td>
+                                    <td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">Sent to Lab</span></td>
+                                    <td class="px-6 py-4 text-right"><button class="text-slate-400 hover:text-brand-600 transition-colors p-1" title="Mark as Received"><i class="ph-bold ph-arrow-arc-right text-lg"></i></button></td>
+                                </tr>
+
+                                <tr class="hover:bg-slate-50 transition-colors group" data-initials="SK" data-type="Implant Resto" data-date="2026-07-26" data-status="0" data-notes="Custom abutment needed">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-bold flex items-center justify-center text-xs">SK</div>
+                                            <div>
+                                                <div class="font-bold text-slate-800 initials-text">SK</div>
+                                                <div class="text-[11px] text-slate-500">Sent: Jul 12, 2026</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col">
+                                            <span class="inline-flex items-center gap-1.5 text-slate-700 font-medium"><div class="w-2 h-2 rounded-full bg-orange-500"></div> Implant Resto</span>
+                                            <span class="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-medium"><i class="ph-fill ph-chat-circle-text"></i> Custom abutment needed</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-slate-700 font-medium">Jul 26, 2026</td>
+                                    <td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">Sent to Lab</span></td>
+                                    <td class="px-6 py-4 text-right"><button class="text-slate-400 hover:text-brand-600 transition-colors p-1" title="Mark as Received"><i class="ph-bold ph-arrow-arc-right text-lg"></i></button></td>
+                                </tr>
+
+                                <tr class="hover:bg-slate-50 transition-colors group" data-initials="BP" data-type="Denture / Partial" data-date="2026-08-02" data-status="0" data-notes="">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-pink-100 text-pink-700 font-bold flex items-center justify-center text-xs">BP</div>
+                                            <div>
+                                                <div class="font-bold text-slate-800 initials-text">BP</div>
+                                                <div class="text-[11px] text-slate-500">Sent: Jul 19, 2026</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-slate-700 font-medium"><div class="w-2 h-2 rounded-full bg-pink-500"></div> Denture / Partial</span></td>
+                                    <td class="px-6 py-4 text-slate-700 font-medium">Aug 02, 2026</td>
+                                    <td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">Sent to Lab</span></td>
+                                    <td class="px-6 py-4 text-right"><button class="text-slate-400 hover:text-brand-600 transition-colors p-1" title="Mark as Received"><i class="ph-bold ph-arrow-arc-right text-lg"></i></button></td>
+                                </tr>
+
+                                <!-- Ready (Received at office) Cases -->
+                                <tr class="hover:bg-slate-50 transition-colors group" data-initials="MR" data-type="Clear Aligners" data-date="2026-07-22" data-status="1" data-notes="">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-cyan-100 text-cyan-700 font-bold flex items-center justify-center text-xs">MR</div>
+                                            <div>
+                                                <div class="font-bold text-slate-800 initials-text">MR</div>
+                                                <div class="text-[11px] text-slate-500">Sent: Jul 08, 2026</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-slate-700 font-medium"><div class="w-2 h-2 rounded-full bg-cyan-500"></div> Clear Aligners</span></td>
+                                    <td class="px-6 py-4 text-slate-400 line-through">Jul 22, 2026</td>
+                                    <td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="ph-bold ph-package mr-1"></i> In Office</span></td>
+                                    <td class="px-6 py-4 text-right"><button class="text-slate-400 hover:text-emerald-600 transition-colors p-1" title="Mark Delivered to Patient & Archive"><i class="ph-fill ph-check-circle text-xl"></i></button></td>
+                                </tr>
+
+                                <tr class="hover:bg-slate-50 transition-colors group" data-initials="TS" data-type="Denture / Partial" data-date="2026-07-10" data-status="1" data-notes="PT coming in tmrw">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-pink-100 text-pink-700 font-bold flex items-center justify-center text-xs">TS</div>
+                                            <div>
+                                                <div class="font-bold text-slate-800 initials-text">TS</div>
+                                                <div class="text-[11px] text-slate-500">Sent: Jun 26, 2026</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col">
+                                            <span class="inline-flex items-center gap-1.5 text-slate-700 font-medium"><div class="w-2 h-2 rounded-full bg-pink-500"></div> Denture / Partial</span>
+                                            <span class="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-medium"><i class="ph-fill ph-chat-circle-text"></i> PT coming in tmrw</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-slate-400 line-through">Jul 10, 2026</td>
+                                    <td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="ph-bold ph-package mr-1"></i> In Office</span></td>
+                                    <td class="px-6 py-4 text-right"><button class="text-slate-400 hover:text-emerald-600 transition-colors p-1" title="Mark Delivered to Patient & Archive"><i class="ph-fill ph-check-circle text-xl"></i></button></td>
+                                </tr>
+
+                                <tr class="hover:bg-slate-50 transition-colors group" data-initials="CJ" data-type="Crown / Bridge" data-date="2026-07-05" data-status="1" data-notes="">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-bold flex items-center justify-center text-xs">CJ</div>
+                                            <div>
+                                                <div class="font-bold text-slate-800 initials-text">CJ</div>
+                                                <div class="text-[11px] text-slate-500">Sent: Jun 21, 2026</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-slate-700 font-medium"><div class="w-2 h-2 rounded-full bg-purple-500"></div> Crown / Bridge</span></td>
+                                    <td class="px-6 py-4 text-slate-400 line-through">Jul 05, 2026</td>
+                                    <td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="ph-bold ph-package mr-1"></i> In Office</span></td>
+                                    <td class="px-6 py-4 text-right"><button class="text-slate-400 hover:text-emerald-600 transition-colors p-1" title="Mark Delivered to Patient & Archive"><i class="ph-fill ph-check-circle text-xl"></i></button></td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Date Auto-calculation ---
+            const dateSentInput = document.getElementById('dateSent');
+            const dateExpectedInput = document.getElementById('dateExpected');
+
+            const today = new Date();
+            dateSentInput.valueAsDate = today;
+
+            function setExpectedDate() {
+                const sentDate = new Date(dateSentInput.value);
+                const expectedDate = new Date(sentDate);
+                expectedDate.setDate(sentDate.getDate() + 14); // 14 day turnaround
+                dateExpectedInput.valueAsDate = expectedDate;
+            }
+
+            setExpectedDate();
+            dateSentInput.addEventListener('change', setExpectedDate);
+
+            // --- Sorting Logic ---
+            const tableBody = document.getElementById('logTableBody');
+            const sortHeaders = document.querySelectorAll('th.sortable');
+            let currentSortColumn = 'date';
+            let currentSortDirection = 'desc';
+
+            function sortTable(column, direction) {
+                const rows = Array.from(tableBody.querySelectorAll('tr'));
+
+                rows.sort((a, b) => {
+                    let valA = a.getAttribute(`data-${column}`);
+                    let valB = b.getAttribute(`data-${column}`);
+
+                    if (column === 'date') {
+                        valA = new Date(valA).getTime();
+                        valB = new Date(valB).getTime();
+                    } else if (column === 'status') {
+                        valA = parseInt(valA);
+                        valB = parseInt(valB);
+                    } else {
+                        valA = valA.toLowerCase();
+                        valB = valB.toLowerCase();
+                    }
+
+                    if (valA < valB) return direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+
+                tableBody.innerHTML = '';
+                rows.forEach(row => tableBody.appendChild(row));
+            }
+
+            sortHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    const column = header.getAttribute('data-sort');
+
+                    if (currentSortColumn === column) {
+                        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSortDirection = 'asc';
+                        currentSortColumn = column;
+                    }
+
+                    sortHeaders.forEach(h => h.classList.remove('asc', 'desc'));
+                    header.classList.add(currentSortDirection);
+
+                    sortTable(column, currentSortDirection);
+                });
+            });
+
+            sortTable(currentSortColumn, currentSortDirection);
+
+            // --- Search Filter Logic ---
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const rows = tableBody.querySelectorAll('tr');
+
+                rows.forEach(row => {
+                    const initials = row.getAttribute('data-initials').toLowerCase();
+                    const notes = (row.getAttribute('data-notes') || '').toLowerCase();
+
+                    if (initials.includes(term) || notes.includes(term)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+
+            // --- Stats Auto-Calculation Logic ---
+            function updateStats() {
+                const rows = tableBody.querySelectorAll('tr');
+                let pending = 0;
+                let ready = 0;
+                let overdue = 0;
+
+                // Get today's date at midnight for accurate overdue comparison
+                const todayMidnight = new Date();
+                todayMidnight.setHours(0,0,0,0);
+
+                rows.forEach(row => {
+                    const status = row.getAttribute('data-status');
+                    // Add T00:00:00 to prevent timezone shifting backwards a day on load
+                    const expDateRaw = row.getAttribute('data-date');
+                    const expDate = new Date(expDateRaw + 'T00:00:00');
+                    expDate.setHours(0,0,0,0);
+
+                    if (status === "0") { // Pending
+                        pending++;
+                        if (expDate < todayMidnight) {
+                            overdue++;
+                        }
+                    } else if (status === "1") { // Received / Ready
+                        ready++;
+                    }
+                });
+
+                document.getElementById('pendingCount').textContent = pending;
+                document.getElementById('readyCount').textContent = ready;
+                document.getElementById('overdueCount').textContent = overdue;
+            }
+
+            // Run initial calculation on page load
+            updateStats();
+
+            // --- Action Buttons (Event Delegation) ---
+            tableBody.addEventListener('click', function(e) {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+
+                const tr = btn.closest('tr');
+                tr.classList.add('opacity-50', 'bg-slate-50');
+
+                // For demo purposes, clicking any action button removes the row
+                // (simulating archiving a completed case or moving it to a received queue)
+                setTimeout(() => {
+                    tr.remove();
+                    updateStats(); // Recalculate stats dynamically!
+                }, 500);
+            });
+
+            // --- Form Submission Logic ---
+            const form = document.getElementById('logForm');
+            const feedbackMsg = document.getElementById('feedbackMsg');
+
+            function showFeedback(msg, isError = false) {
+                feedbackMsg.textContent = msg;
+                feedbackMsg.className = `text-xs text-center mt-3 font-semibold h-4 transition-opacity duration-300 ${isError ? 'text-red-500' : 'text-emerald-600'}`;
+                feedbackMsg.style.opacity = '1';
+                setTimeout(() => { feedbackMsg.style.opacity = '0'; }, 3000);
+            }
+
+            function getTypeStyles(type) {
+                switch(type) {
+                    case 'aligners': return { text: 'Clear Aligners', color: 'bg-cyan-500', initialBg: 'bg-cyan-100 text-cyan-700' };
+                    case 'crown': return { text: 'Crown / Bridge', color: 'bg-purple-500', initialBg: 'bg-purple-100 text-purple-700' };
+                    case 'implant': return { text: 'Implant Resto', color: 'bg-orange-500', initialBg: 'bg-orange-100 text-orange-700' };
+                    case 'nightguard': return { text: 'Nightguard', color: 'bg-indigo-500', initialBg: 'bg-indigo-100 text-indigo-700' };
+                    case 'denture': return { text: 'Denture / Partial', color: 'bg-pink-500', initialBg: 'bg-pink-100 text-pink-700' };
+                    default: return { text: 'Unknown', color: 'bg-gray-500', initialBg: 'bg-gray-100 text-gray-700' };
+                }
+            }
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const initials = document.getElementById('initials').value.toUpperCase();
+                const dob = document.getElementById('dob').value;
+                const typeSelect = document.getElementById('caseType');
+                const rawSentDate = document.getElementById('dateSent').value;
+                const rawExpectedDate = document.getElementById('dateExpected').value;
+                const notes = document.getElementById('notes').value.trim();
+                const status = document.querySelector('input[name="status"]:checked').value;
+
+                if(!/^\d{2}\/\d{2}$/.test(dob)) {
+                    showFeedback('Please enter DOB in MM/YY format.', true);
+                    return;
+                }
+
+                const formatOptions = { month: 'short', day: '2-digit', year: 'numeric' };
+                const sentStr = new Date(rawSentDate).toLocaleDateString('en-US', formatOptions);
+                const expObj = new Date(rawExpectedDate);
+                const expStr = expObj.toLocaleDateString('en-US', formatOptions);
+
+                const todayMidnight = new Date();
+                todayMidnight.setHours(0,0,0,0);
+                expObj.setHours(0,0,0,0);
+                const isLate = expObj < todayMidnight && status === 'sent';
+
+                const typeInfo = getTypeStyles(typeSelect.value);
+
+                let statusBadge, actionBtn, expectedBadge;
+                let statusVal = status === 'sent' ? "0" : "1";
+
+                if(status === 'sent') {
+                    statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">Sent to Lab</span>`;
+                    actionBtn = `<button class="text-slate-400 hover:text-brand-600 transition-colors p-1 action-receive" title="Mark as Received"><i class="ph-bold ph-arrow-arc-right text-lg"></i></button>`;
+
+                    if (isLate) {
+                        expectedBadge = `<span class="inline-flex items-center gap-1.5 text-red-600 font-bold bg-red-50 px-2.5 py-1 rounded-md border border-red-100"><i class="ph-fill ph-warning-circle"></i> ${expStr}</span>`;
+                    } else {
+                        expectedBadge = `<span class="text-slate-700 font-medium">${expStr}</span>`;
+                    }
+                } else {
+                    statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="ph-bold ph-package mr-1"></i> In Office</span>`;
+                    actionBtn = `<button class="text-slate-400 hover:text-emerald-600 transition-colors p-1 action-deliver" title="Mark Delivered to Patient & Archive"><i class="ph-fill ph-check-circle text-xl"></i></button>`;
+                    expectedBadge = `<span class="text-slate-400 line-through">${expStr}</span>`;
+                }
+
+                // Generate notes HTML if provided
+                let notesHtml = '';
+                if (notes) {
+                    notesHtml = `<span class="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-medium"><i class="ph-fill ph-chat-circle-text"></i> ${notes}</span>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition-colors group';
+                tr.setAttribute('data-initials', initials);
+                tr.setAttribute('data-type', typeInfo.text);
+                tr.setAttribute('data-date', rawExpectedDate);
+                tr.setAttribute('data-status', statusVal);
+                tr.setAttribute('data-notes', notes); // Save for searching
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full ${typeInfo.initialBg} font-bold flex items-center justify-center text-xs">
+                                ${initials.substring(0,2)}
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-800 initials-text">${initials}</div>
+                                <div class="text-[11px] text-slate-500">Sent: ${sentStr}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col">
+                            <span class="inline-flex items-center gap-1.5 text-slate-700 font-medium">
+                                <div class="w-2 h-2 rounded-full ${typeInfo.color}"></div> ${typeInfo.text}
+                            </span>
+                            ${notesHtml}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">${expectedBadge}</td>
+                    <td class="px-6 py-4">${statusBadge}</td>
+                    <td class="px-6 py-4 text-right">${actionBtn}</td>
+                `;
+
+                tableBody.appendChild(tr);
+                sortTable(currentSortColumn, currentSortDirection);
+                updateStats(); // Force stat recalculation after adding
+
+                // Clear everything
+                form.reset();
+                document.getElementById('dateSent').valueAsDate = new Date();
+                setExpectedDate();
+                document.getElementById('caseType').selectedIndex = 0;
+
+                showFeedback(`Case for ${initials} successfully added.`);
+            });
+        });
+    </script>
+</body>
+</html>
