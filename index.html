@@ -168,9 +168,9 @@
                                     class="input-field w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 uppercase placeholder-slate-400 font-medium">
                             </div>
                             <div class="space-y-1.5">
-                                <label class="text-xs font-semibold text-slate-600 block">DOB (MM/YY)</label>
-                                <input type="text" id="dob" required placeholder="08/85"
-                                    class="input-field w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 font-medium text-center">
+                                <label class="text-xs font-semibold text-slate-600 block">Date of Birth</label>
+                                <input type="date" id="dob" required
+                                    class="input-field w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-medium text-sm">
                             </div>
                         </div>
 
@@ -576,6 +576,7 @@
 
             function rebuildRowHTML(tr) {
                 const initials = tr.getAttribute('data-initials');
+                const rawDob = tr.getAttribute('data-dob');
                 const typeVal = tr.getAttribute('data-type-val');
                 const lab = tr.getAttribute('data-lab');
                 const rawSentDate = tr.getAttribute('data-sent');
@@ -588,6 +589,9 @@
                 const sentStr = new Date(rawSentDate + 'T00:00:00').toLocaleDateString('en-US', formatOptions);
                 const expObj = new Date(rawExpectedDate + 'T00:00:00');
                 const expStr = expObj.toLocaleDateString('en-US', formatOptions);
+                const dobStr = rawDob
+                    ? new Date(rawDob + 'T00:00:00').toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })
+                    : '';
 
                 const todayMidnight = new Date();
                 todayMidnight.setHours(0, 0, 0, 0);
@@ -635,7 +639,10 @@
                                 ${initials.substring(0, 2)}
                             </div>
                             <div>
-                                <div class="font-bold text-slate-800 initials-text">${initials}</div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="font-bold text-slate-800 initials-text">${initials}</span>
+                                    <span class="text-[11px] text-slate-400 font-semibold">${dobStr}</span>
+                                </div>
                                 <div class="text-[11px] text-slate-500">Sent: ${sentStr}</div>
                             </div>
                         </div>
@@ -785,13 +792,8 @@
             // --- Form Submission ---
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const dob = document.getElementById('dob').value;
-                if (!/^\d{2}\/\d{2}$/.test(dob)) {
-                    showFeedback('Please enter DOB in MM/YY format.', true);
-                    return;
-                }
-
                 await withSync(async () => {
+                    const dob = document.getElementById('dob').value;
                     const initials = document.getElementById('initials').value.toUpperCase();
                     const caseType = document.getElementById('caseType').value;
                     const labProvider = document.getElementById('labProvider').value;
