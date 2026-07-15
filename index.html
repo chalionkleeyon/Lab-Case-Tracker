@@ -22,6 +22,9 @@
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
                         brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 900: '#0c4a6e' }
+                    },
+                    animation: {
+                        'spin-slow': 'spin 1.5s linear infinite',
                     }
                 }
             }
@@ -91,7 +94,12 @@
                 <i class="ph-fill ph-tooth text-2xl"></i>
             </div>
             <div>
-                <h1 class="text-lg font-bold text-slate-800 leading-tight">Digital Lab Tracker</h1>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-lg font-bold text-slate-800 leading-tight">Digital Lab Tracker</h1>
+                    <span id="syncIndicator" class="opacity-0 transition-opacity duration-300 flex items-center gap-1.5 bg-slate-100 px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-500 uppercase tracking-wider border border-slate-200">
+                        <i class="ph-bold ph-arrows-clockwise animate-spin-slow text-brand-500"></i> Syncing
+                    </span>
+                </div>
                 <p class="text-xs font-medium text-slate-500 flex items-center gap-1">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
                     Hoboken Clinic &bull; Privacy Compliant
@@ -143,14 +151,15 @@
                 </div>
 
                 <!-- Form Card -->
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                        <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" id="formContainer">
+                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 transition-colors duration-300" id="formHeader">
+                        <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2" id="formTitle">
                             <i class="ph-bold ph-plus"></i> New Lab Case
                         </h2>
                     </div>
 
                     <form id="logForm" class="p-6 space-y-4">
+                        <input type="hidden" id="editingCaseId" value="">
 
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-1.5">
@@ -165,18 +174,34 @@
                             </div>
                         </div>
 
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-semibold text-slate-600 block">Case Type</label>
-                            <div class="relative">
-                                <select id="caseType" required class="input-field w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-medium appearance-none cursor-pointer">
-                                    <option value="" disabled selected>Select restoration type...</option>
-                                    <option value="aligners">Clear Aligners (Invisalign)</option>
-                                    <option value="crown">Crown / Bridge</option>
-                                    <option value="implant">Implant Restoration</option>
-                                    <option value="nightguard">Nightguard / Splint</option>
-                                    <option value="denture">Denture / Partial</option>
-                                </select>
-                                <i class="ph-bold ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-semibold text-slate-600 block">Case Type</label>
+                                <div class="relative">
+                                    <select id="caseType" required class="input-field w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-medium appearance-none cursor-pointer text-sm">
+                                        <option value="" disabled selected>Select...</option>
+                                        <option value="aligners">Clear Aligners</option>
+                                        <option value="crown">Crown/Bridge</option>
+                                        <option value="implant">Implant</option>
+                                        <option value="nightguard">Nightguard</option>
+                                        <option value="denture">Denture</option>
+                                    </select>
+                                    <i class="ph-bold ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                                </div>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-semibold text-slate-600 block">Destination Lab</label>
+                                <div class="relative">
+                                    <select id="labProvider" required class="input-field w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-medium appearance-none cursor-pointer text-sm">
+                                        <option value="" disabled selected>Select lab...</option>
+                                        <option value="Align">Align (Invisalign)</option>
+                                        <option value="Glidewell">Glidewell</option>
+                                        <option value="Kuwata">Kuwata Pan Dent</option>
+                                        <option value="VanHook">VanHook</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    <i class="ph-bold ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                                </div>
                             </div>
                         </div>
 
@@ -219,12 +244,16 @@
                             </div>
                         </div>
 
-                        <div class="pt-2">
-                            <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg shadow-sm shadow-brand-200 transition-colors flex justify-center items-center gap-2">
-                                <i class="ph-bold ph-plus-circle text-lg"></i> Add to Registry
+                        <div class="pt-2 flex flex-col sm:flex-row gap-2">
+                            <button type="submit" id="submitBtn" class="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg shadow-sm shadow-brand-200 transition-colors flex justify-center items-center gap-2 relative">
+                                <span id="btnText" class="flex items-center gap-2"><i class="ph-bold ph-plus-circle text-lg"></i> Save Case</span>
+                                <i id="btnLoader" class="ph-bold ph-spinner animate-spin text-xl absolute hidden"></i>
                             </button>
-                            <p id="feedbackMsg" class="text-xs text-center mt-3 font-medium opacity-0 transition-opacity h-4"></p>
+                            <button type="button" id="cancelEditBtn" class="hidden px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-lg transition-colors flex justify-center items-center gap-2">
+                                Cancel
+                            </button>
                         </div>
+                        <p id="feedbackMsg" class="text-xs text-center mt-2 font-medium opacity-0 transition-opacity h-4"></p>
                     </form>
                 </div>
             </div>
@@ -234,8 +263,19 @@
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col min-h-[500px]">
 
                     <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white">
+
+                        <!-- Active / Archive Tabs -->
+                        <div class="bg-slate-100 p-1 rounded-lg flex items-center w-full sm:w-auto">
+                            <button id="tabActive" class="flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-bold bg-white text-brand-600 shadow-sm transition-all" onclick="switchTab('active')">
+                                Active Cases
+                            </button>
+                            <button id="tabArchive" class="flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-bold text-slate-500 hover:text-slate-700 transition-all" onclick="switchTab('archive')">
+                                History (Archived)
+                            </button>
+                        </div>
+
                         <div class="flex items-center gap-2 w-full sm:w-auto">
-                            <div class="relative w-full sm:w-72">
+                            <div class="relative w-full sm:w-64">
                                 <i class="ph-bold ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                 <input type="text" id="searchInput" placeholder="Search initials or notes..." class="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 w-full transition-all">
                             </div>
@@ -250,7 +290,7 @@
                                         Patient <i class="ph-bold ph-caret-down sort-icon"></i>
                                     </th>
                                     <th scope="col" class="px-6 py-3 font-semibold text-xs uppercase tracking-wider sortable" data-sort="type">
-                                        Type & Notes <i class="ph-bold ph-caret-down sort-icon"></i>
+                                        Case Details <i class="ph-bold ph-caret-down sort-icon"></i>
                                     </th>
                                     <th scope="col" class="px-6 py-3 font-semibold text-xs uppercase tracking-wider sortable desc" data-sort="date">
                                         Expected Return <i class="ph-bold ph-caret-down sort-icon"></i>
@@ -258,12 +298,20 @@
                                     <th scope="col" class="px-6 py-3 font-semibold text-xs uppercase tracking-wider sortable" data-sort="status">
                                         Status <i class="ph-bold ph-caret-down sort-icon"></i>
                                     </th>
-                                    <th scope="col" class="px-6 py-3 font-semibold text-xs uppercase tracking-wider text-right">Action</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-xs uppercase tracking-wider text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="logTableBody" class="divide-y divide-slate-100 bg-white">
-                            </tbody>
+                            <tbody id="logTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
                         </table>
+
+                        <!-- Empty State -->
+                        <div id="emptyState" class="hidden flex-col items-center justify-center py-12 px-4 text-center">
+                            <div class="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-4">
+                                <i class="ph-fill ph-magnifying-glass text-3xl"></i>
+                            </div>
+                            <h3 class="text-sm font-bold text-slate-800">No cases found</h3>
+                            <p class="text-xs text-slate-500 mt-1">Try adjusting your search or filters.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -320,209 +368,119 @@
                 await loadCases();
             }
 
+            // --- Global State ---
+            let editingRow = null;
+            let currentView = 'active';
+
+            // --- UI Elements ---
+            const form = document.getElementById('logForm');
+            const tableBody = document.getElementById('logTableBody');
+            const searchInput = document.getElementById('searchInput');
+            const syncIndicator = document.getElementById('syncIndicator');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            const emptyState = document.getElementById('emptyState');
+
             // --- Date Auto-calculation ---
             const dateSentInput = document.getElementById('dateSent');
             const dateExpectedInput = document.getElementById('dateExpected');
-
-            const today = new Date();
-            dateSentInput.valueAsDate = today;
+            dateSentInput.valueAsDate = new Date();
 
             function setExpectedDate() {
+                if (editingRow) return;
                 const sentDate = new Date(dateSentInput.value);
                 const expectedDate = new Date(sentDate);
                 expectedDate.setDate(sentDate.getDate() + 14);
                 dateExpectedInput.valueAsDate = expectedDate;
             }
-
             setExpectedDate();
             dateSentInput.addEventListener('change', setExpectedDate);
 
-            // --- Type Styles ---
-            function getTypeStyles(type) {
-                switch(type) {
-                    case 'aligners': return { text: 'Clear Aligners', color: 'bg-cyan-500', initialBg: 'bg-cyan-100 text-cyan-700' };
-                    case 'crown': return { text: 'Crown / Bridge', color: 'bg-purple-500', initialBg: 'bg-purple-100 text-purple-700' };
-                    case 'implant': return { text: 'Implant Resto', color: 'bg-orange-500', initialBg: 'bg-orange-100 text-orange-700' };
-                    case 'nightguard': return { text: 'Nightguard', color: 'bg-indigo-500', initialBg: 'bg-indigo-100 text-indigo-700' };
-                    case 'denture': return { text: 'Denture / Partial', color: 'bg-pink-500', initialBg: 'bg-pink-100 text-pink-700' };
-                    default: return { text: type || 'Unknown', color: 'bg-gray-500', initialBg: 'bg-gray-100 text-gray-700' };
+            // --- Network Loading Helper ---
+            async function withSync(callback) {
+                syncIndicator.style.opacity = '1';
+                btnText.classList.add('opacity-0');
+                btnLoader.classList.remove('hidden');
+                form.querySelectorAll('button, input, select').forEach(el => el.disabled = true);
+
+                try {
+                    return await callback();
+                } finally {
+                    syncIndicator.style.opacity = '0';
+                    btnText.classList.remove('opacity-0');
+                    btnLoader.classList.add('hidden');
+                    form.querySelectorAll('button, input, select').forEach(el => el.disabled = false);
                 }
             }
 
-            // --- Render a single case row ---
-            function renderCaseRow(c) {
-                const typeInfo = getTypeStyles(c.case_type);
-                const isSent = c.status === 'sent';
-                const statusVal = isSent ? '0' : '1';
+            // --- Active / Archive Tabs ---
+            window.switchTab = function(view) {
+                currentView = view;
+                const tabActive = document.getElementById('tabActive');
+                const tabArchive = document.getElementById('tabArchive');
 
-                const formatOptions = { month: 'short', day: '2-digit', year: 'numeric' };
-                const sentStr = new Date(c.date_sent + 'T00:00:00').toLocaleDateString('en-US', formatOptions);
-                const expDate = new Date(c.date_expected + 'T00:00:00');
-                const expStr = expDate.toLocaleDateString('en-US', formatOptions);
-
-                const todayMidnight = new Date();
-                todayMidnight.setHours(0,0,0,0);
-                const expMidnight = new Date(expDate);
-                expMidnight.setHours(0,0,0,0);
-                const isOverdue = expMidnight < todayMidnight && isSent;
-
-                let expectedBadge, statusBadge, actionBtn;
-
-                if (isSent) {
-                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">Sent to Lab</span>';
-                    actionBtn = '<button class="text-slate-400 hover:text-brand-600 transition-colors p-1" title="Mark as Received"><i class="ph-bold ph-arrow-arc-right text-lg"></i></button>';
-                    if (isOverdue) {
-                        expectedBadge = `<span class="inline-flex items-center gap-1.5 text-red-600 font-bold bg-red-50 px-2.5 py-1 rounded-md border border-red-100"><i class="ph-fill ph-warning-circle"></i> ${expStr}</span>`;
-                    } else {
-                        expectedBadge = `<span class="text-slate-700 font-medium">${expStr}</span>`;
-                    }
+                if (view === 'active') {
+                    tabActive.className = "flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-bold bg-white text-brand-600 shadow-sm transition-all";
+                    tabArchive.className = "flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-bold text-slate-500 hover:text-slate-700 transition-all";
                 } else {
-                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="ph-bold ph-package mr-1"></i> In Office</span>';
-                    actionBtn = '<button class="text-slate-400 hover:text-emerald-600 transition-colors p-1" title="Mark Delivered to Patient & Archive"><i class="ph-fill ph-check-circle text-xl"></i></button>';
-                    expectedBadge = `<span class="text-slate-400 line-through">${expStr}</span>`;
+                    tabArchive.className = "flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-bold bg-white text-brand-600 shadow-sm transition-all";
+                    tabActive.className = "flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-bold text-slate-500 hover:text-slate-700 transition-all";
                 }
 
-                let notesHtml = '';
-                if (c.notes) {
-                    notesHtml = `<span class="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-medium"><i class="ph-fill ph-chat-circle-text"></i> ${c.notes}</span>`;
-                }
-
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-50 transition-colors group';
-                tr.setAttribute('data-id', c.id);
-                tr.setAttribute('data-initials', c.initials);
-                tr.setAttribute('data-type', typeInfo.text);
-                tr.setAttribute('data-date', c.date_expected);
-                tr.setAttribute('data-status', statusVal);
-                tr.setAttribute('data-notes', c.notes || '');
-
-                tr.innerHTML = `
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full ${typeInfo.initialBg} font-bold flex items-center justify-center text-xs">${c.initials.substring(0,2)}</div>
-                            <div>
-                                <div class="font-bold text-slate-800 initials-text">${c.initials}</div>
-                                <div class="text-[11px] text-slate-500">Sent: ${sentStr}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex flex-col">
-                            <span class="inline-flex items-center gap-1.5 text-slate-700 font-medium"><div class="w-2 h-2 rounded-full ${typeInfo.color}"></div> ${typeInfo.text}</span>
-                            ${notesHtml}
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">${expectedBadge}</td>
-                    <td class="px-6 py-4">${statusBadge}</td>
-                    <td class="px-6 py-4 text-right">${actionBtn}</td>
-                `;
-
-                return tr;
+                applyFilters();
             }
 
-            // --- Load all cases from Supabase ---
-            const tableBody = document.getElementById('logTableBody');
+            // --- Filtering & Searching combined ---
+            function applyFilters() {
+                const term = searchInput.value.toLowerCase();
+                const rows = tableBody.querySelectorAll('tr');
+                let visibleCount = 0;
 
-            async function loadCases() {
-                const { data, error } = await sb
-                    .from('cases')
-                    .select('*')
-                    .order('date_expected', { ascending: true });
+                rows.forEach(row => {
+                    const isArchived = row.getAttribute('data-archived') === 'true';
+                    const initials = (row.getAttribute('data-initials') || '').toLowerCase();
+                    const notes = (row.getAttribute('data-notes') || '').toLowerCase();
+                    const lab = (row.getAttribute('data-lab') || '').toLowerCase();
 
-                if (error) {
-                    showFeedback('Failed to load cases: ' + error.message, true);
-                    return;
+                    const viewMatch = (currentView === 'active' && !isArchived) || (currentView === 'archive' && isArchived);
+                    const searchMatch = initials.includes(term) || notes.includes(term) || lab.includes(term);
+
+                    if (viewMatch && searchMatch) {
+                        row.classList.remove('hidden');
+                        visibleCount++;
+                    } else {
+                        row.classList.add('hidden');
+                    }
+                });
+
+                if (visibleCount === 0) {
+                    emptyState.classList.remove('hidden');
+                    emptyState.classList.add('flex');
+                } else {
+                    emptyState.classList.add('hidden');
+                    emptyState.classList.remove('flex');
                 }
-
-                tableBody.innerHTML = '';
-                (data || []).forEach(c => tableBody.appendChild(renderCaseRow(c)));
-                sortTable(currentSortColumn, currentSortDirection);
                 updateStats();
             }
 
-            // --- Sorting Logic ---
-            const sortHeaders = document.querySelectorAll('th.sortable');
-            let currentSortColumn = 'date';
-            let currentSortDirection = 'desc';
-
-            function sortTable(column, direction) {
-                const rows = Array.from(tableBody.querySelectorAll('tr'));
-
-                rows.sort((a, b) => {
-                    let valA = a.getAttribute(`data-${column}`);
-                    let valB = b.getAttribute(`data-${column}`);
-
-                    if (column === 'date') {
-                        valA = new Date(valA).getTime();
-                        valB = new Date(valB).getTime();
-                    } else if (column === 'status') {
-                        valA = parseInt(valA);
-                        valB = parseInt(valB);
-                    } else {
-                        valA = (valA || '').toLowerCase();
-                        valB = (valB || '').toLowerCase();
-                    }
-
-                    if (valA < valB) return direction === 'asc' ? -1 : 1;
-                    if (valA > valB) return direction === 'asc' ? 1 : -1;
-                    return 0;
-                });
-
-                tableBody.innerHTML = '';
-                rows.forEach(row => tableBody.appendChild(row));
-            }
-
-            sortHeaders.forEach(header => {
-                header.addEventListener('click', () => {
-                    const column = header.getAttribute('data-sort');
-
-                    if (currentSortColumn === column) {
-                        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
-                    } else {
-                        currentSortDirection = 'asc';
-                        currentSortColumn = column;
-                    }
-
-                    sortHeaders.forEach(h => h.classList.remove('asc', 'desc'));
-                    header.classList.add(currentSortDirection);
-
-                    sortTable(column, currentSortDirection);
-                });
-            });
-
-            // --- Search Filter Logic ---
-            const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
-                const rows = tableBody.querySelectorAll('tr');
-
-                rows.forEach(row => {
-                    const initials = (row.getAttribute('data-initials') || '').toLowerCase();
-                    const notes = (row.getAttribute('data-notes') || '').toLowerCase();
-
-                    if (initials.includes(term) || notes.includes(term)) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-            });
+            searchInput.addEventListener('input', applyFilters);
 
             // --- Stats Auto-Calculation ---
             function updateStats() {
                 const rows = tableBody.querySelectorAll('tr');
-                let pending = 0;
-                let ready = 0;
-                let overdue = 0;
+                let pending = 0, ready = 0, overdue = 0;
 
                 const todayMidnight = new Date();
-                todayMidnight.setHours(0,0,0,0);
+                todayMidnight.setHours(0, 0, 0, 0);
 
                 rows.forEach(row => {
+                    const isArchived = row.getAttribute('data-archived') === 'true';
+                    if (isArchived) return;
+
                     const status = row.getAttribute('data-status');
                     const expDateRaw = row.getAttribute('data-date');
                     const expDate = new Date(expDateRaw + 'T00:00:00');
-                    expDate.setHours(0,0,0,0);
+                    expDate.setHours(0, 0, 0, 0);
 
                     if (status === '0') {
                         pending++;
@@ -537,112 +495,365 @@
                 document.getElementById('overdueCount').textContent = overdue;
             }
 
+            // --- Sorting Logic ---
+            const sortHeaders = document.querySelectorAll('th.sortable');
+            let currentSortColumn = 'date';
+            let currentSortDirection = 'desc';
+
+            function sortTable(column, direction) {
+                const rows = Array.from(tableBody.querySelectorAll('tr'));
+                rows.sort((a, b) => {
+                    let valA = a.getAttribute(`data-${column}`);
+                    let valB = b.getAttribute(`data-${column}`);
+
+                    if (column === 'date') {
+                        valA = new Date(valA).getTime();
+                        valB = new Date(valB).getTime();
+                    } else if (column === 'status') {
+                        valA = parseInt(valA);
+                        valB = parseInt(valB);
+                    } else {
+                        valA = (valA || '').toLowerCase();
+                        valB = (valB || '').toLowerCase();
+                    }
+                    if (valA < valB) return direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                tableBody.innerHTML = '';
+                rows.forEach(row => tableBody.appendChild(row));
+            }
+
+            sortHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    const column = header.getAttribute('data-sort');
+                    if (currentSortColumn === column) {
+                        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSortDirection = 'asc';
+                        currentSortColumn = column;
+                    }
+                    sortHeaders.forEach(h => h.classList.remove('asc', 'desc'));
+                    header.classList.add(currentSortDirection);
+                    sortTable(column, currentSortDirection);
+                });
+            });
+
+            // --- Type Styles ---
+            function getTypeStyles(type) {
+                switch (type) {
+                    case 'aligners': return { text: 'Clear Aligners', color: 'bg-cyan-500', initialBg: 'bg-cyan-100 text-cyan-700' };
+                    case 'crown': return { text: 'Crown / Bridge', color: 'bg-purple-500', initialBg: 'bg-purple-100 text-purple-700' };
+                    case 'implant': return { text: 'Implant Resto', color: 'bg-orange-500', initialBg: 'bg-orange-100 text-orange-700' };
+                    case 'nightguard': return { text: 'Nightguard', color: 'bg-indigo-500', initialBg: 'bg-indigo-100 text-indigo-700' };
+                    case 'denture': return { text: 'Denture', color: 'bg-pink-500', initialBg: 'bg-pink-100 text-pink-700' };
+                    default: return { text: type || 'Unknown', color: 'bg-gray-500', initialBg: 'bg-gray-100 text-gray-700' };
+                }
+            }
+
+            // --- Row build/rebuild from a Supabase case record ---
+            function buildRow(c) {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition-colors group';
+                tr.setAttribute('data-id', c.id);
+                syncRowAttributes(tr, c);
+                rebuildRowHTML(tr);
+                return tr;
+            }
+
+            function syncRowAttributes(tr, c) {
+                tr.setAttribute('data-archived', c.archived ? 'true' : 'false');
+                tr.setAttribute('data-initials', c.initials);
+                tr.setAttribute('data-dob', c.dob);
+                tr.setAttribute('data-type-val', c.case_type);
+                tr.setAttribute('data-type', getTypeStyles(c.case_type).text);
+                tr.setAttribute('data-lab', c.lab || '');
+                tr.setAttribute('data-sent', c.date_sent);
+                tr.setAttribute('data-date', c.date_expected);
+                tr.setAttribute('data-status', c.status === 'sent' ? '0' : '1');
+                tr.setAttribute('data-notes', c.notes || '');
+            }
+
+            function rebuildRowHTML(tr) {
+                const initials = tr.getAttribute('data-initials');
+                const typeVal = tr.getAttribute('data-type-val');
+                const lab = tr.getAttribute('data-lab');
+                const rawSentDate = tr.getAttribute('data-sent');
+                const rawExpectedDate = tr.getAttribute('data-date');
+                const statusVal = tr.getAttribute('data-status');
+                const notes = tr.getAttribute('data-notes');
+                const isArchived = tr.getAttribute('data-archived') === 'true';
+
+                const formatOptions = { month: 'short', day: '2-digit', year: 'numeric' };
+                const sentStr = new Date(rawSentDate + 'T00:00:00').toLocaleDateString('en-US', formatOptions);
+                const expObj = new Date(rawExpectedDate + 'T00:00:00');
+                const expStr = expObj.toLocaleDateString('en-US', formatOptions);
+
+                const todayMidnight = new Date();
+                todayMidnight.setHours(0, 0, 0, 0);
+                expObj.setHours(0, 0, 0, 0);
+                const isLate = expObj < todayMidnight && statusVal === '0' && !isArchived;
+
+                const typeInfo = getTypeStyles(typeVal);
+
+                let statusBadge, actionBtn, expectedBadge;
+                let opacityClass = isArchived ? 'opacity-60' : '';
+                let avatarColor = isArchived ? 'bg-gray-200 text-gray-500' : typeInfo.initialBg;
+                let typeDotColor = isArchived ? 'bg-gray-400' : typeInfo.color;
+
+                if (isArchived) {
+                    statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200"><i class="ph-bold ph-archive mr-1"></i> Archived</span>`;
+                    actionBtn = `<button class="text-slate-400 hover:text-brand-600 transition-colors p-1 action-restore" title="Restore Case"><i class="ph-bold ph-arrow-u-up-left text-lg"></i></button>`;
+                    expectedBadge = `<span class="text-slate-400 opacity-60">${expStr}</span>`;
+                } else if (statusVal === '0') {
+                    statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">Sent to Lab</span>`;
+                    actionBtn = `
+                        <button class="text-slate-400 hover:text-brand-600 transition-colors p-1 action-edit" title="Edit Case"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+                        <button class="text-slate-400 hover:text-emerald-600 transition-colors p-1 action-receive" title="Mark as Received"><i class="ph-bold ph-package text-lg"></i></button>
+                    `;
+                    expectedBadge = isLate ?
+                        `<span class="inline-flex items-center gap-1.5 text-red-600 font-bold bg-red-50 px-2.5 py-1 rounded-md border border-red-100"><i class="ph-fill ph-warning-circle"></i> ${expStr}</span>` :
+                        `<span class="text-slate-700 font-medium">${expStr}</span>`;
+                } else {
+                    statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="ph-bold ph-check mr-1"></i> Ready for PT</span>`;
+                    actionBtn = `
+                        <button class="text-slate-400 hover:text-emerald-600 transition-colors p-1 action-edit" title="Edit Case"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+                        <button class="text-emerald-500 hover:text-emerald-700 transition-colors p-1 action-archive" title="Mark Delivered & Archive"><i class="ph-fill ph-check-circle text-xl"></i></button>
+                    `;
+                    expectedBadge = `<span class="text-slate-400 line-through">${expStr}</span>`;
+                }
+
+                let notesHtml = '';
+                if (notes) {
+                    notesHtml = `<span class="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1 font-medium"><i class="ph-fill ph-chat-circle-text text-slate-400"></i> ${notes}</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 ${opacityClass}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full ${avatarColor} font-bold flex items-center justify-center text-xs">
+                                ${initials.substring(0, 2)}
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-800 initials-text">${initials}</div>
+                                <div class="text-[11px] text-slate-500">Sent: ${sentStr}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 ${opacityClass}">
+                        <div class="flex flex-col">
+                            <span class="inline-flex items-center gap-1.5 text-slate-700 font-medium">
+                                <div class="w-2 h-2 rounded-full ${typeDotColor}"></div> ${typeInfo.text}
+                            </span>
+                            <span class="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-medium"><i class="ph-fill ph-building-office text-slate-400"></i> ${lab}</span>
+                            ${notesHtml}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">${expectedBadge}</td>
+                    <td class="px-6 py-4 ${opacityClass}">${statusBadge}</td>
+                    <td class="px-6 py-4 text-right space-x-1">${actionBtn}</td>
+                `;
+            }
+
+            // --- Load all cases from Supabase ---
+            async function loadCases() {
+                await withSync(async () => {
+                    const { data, error } = await sb
+                        .from('cases')
+                        .select('*')
+                        .order('date_expected', { ascending: true });
+
+                    if (error) {
+                        showFeedback('Failed to load cases: ' + error.message, true);
+                        return;
+                    }
+
+                    tableBody.innerHTML = '';
+                    (data || []).forEach(c => tableBody.appendChild(buildRow(c)));
+                    sortTable(currentSortColumn, currentSortDirection);
+                    applyFilters();
+                });
+            }
+
             // --- Action Buttons (Event Delegation) ---
             tableBody.addEventListener('click', async function(e) {
                 const btn = e.target.closest('button');
                 if (!btn) return;
-
                 const tr = btn.closest('tr');
                 const id = tr.getAttribute('data-id');
-                const currentStatus = tr.getAttribute('data-status');
 
-                tr.classList.add('opacity-50');
+                if (btn.classList.contains('action-edit')) {
+                    enterEditMode(tr);
+                    return;
+                }
 
-                if (currentStatus === '0') {
-                    const { error } = await sb
+                let update = null;
+                if (btn.classList.contains('action-receive')) update = { status: 'returned' };
+                if (btn.classList.contains('action-archive')) update = { archived: true };
+                if (btn.classList.contains('action-restore')) update = { archived: false };
+                if (!update) return;
+
+                await withSync(async () => {
+                    const { data, error } = await sb
                         .from('cases')
-                        .update({ status: 'returned' })
-                        .eq('id', id);
+                        .update(update)
+                        .eq('id', id)
+                        .select()
+                        .single();
 
                     if (error) {
-                        tr.classList.remove('opacity-50');
                         showFeedback('Update failed: ' + error.message, true);
                         return;
                     }
 
-                    const { data } = await sb.from('cases').select('*').eq('id', id).single();
-                    if (data) {
-                        const newRow = renderCaseRow(data);
-                        tr.replaceWith(newRow);
-                    }
-                } else {
-                    const { error } = await sb
-                        .from('cases')
-                        .delete()
-                        .eq('id', id);
-
-                    if (error) {
-                        tr.classList.remove('opacity-50');
-                        showFeedback('Delete failed: ' + error.message, true);
-                        return;
-                    }
-
-                    setTimeout(() => tr.remove(), 300);
-                }
-
-                updateStats();
+                    syncRowAttributes(tr, data);
+                    rebuildRowHTML(tr);
+                    applyFilters();
+                    sortTable(currentSortColumn, currentSortDirection);
+                });
             });
 
-            // --- Feedback ---
-            const feedbackMsg = document.getElementById('feedbackMsg');
+            // --- Edit Mode Logic ---
+            const formTitle = document.getElementById('formTitle');
+            const submitBtn = document.getElementById('submitBtn');
+            const cancelEditBtn = document.getElementById('cancelEditBtn');
+            const formHeader = document.getElementById('formHeader');
+
+            function enterEditMode(tr) {
+                editingRow = tr;
+                document.querySelectorAll('tr.editing-active').forEach(r => r.classList.remove('bg-brand-50', 'editing-active'));
+                tr.classList.add('bg-brand-50', 'editing-active');
+
+                document.getElementById('editingCaseId').value = tr.getAttribute('data-id');
+                document.getElementById('initials').value = tr.getAttribute('data-initials');
+                document.getElementById('dob').value = tr.getAttribute('data-dob');
+                document.getElementById('caseType').value = tr.getAttribute('data-type-val');
+                document.getElementById('labProvider').value = tr.getAttribute('data-lab');
+                document.getElementById('dateSent').value = tr.getAttribute('data-sent');
+                document.getElementById('dateExpected').value = tr.getAttribute('data-date');
+                document.getElementById('notes').value = tr.getAttribute('data-notes') || '';
+
+                const statusVal = tr.getAttribute('data-status');
+                document.querySelector(`input[name="status"][value="${statusVal === '0' ? 'sent' : 'returned'}"]`).checked = true;
+
+                formHeader.classList.replace('bg-slate-50/50', 'bg-emerald-50');
+                formTitle.innerHTML = '<i class="ph-bold ph-pencil"></i> Edit Lab Case';
+                formTitle.classList.replace('text-slate-800', 'text-emerald-800');
+
+                btnText.innerHTML = '<i class="ph-bold ph-floppy-disk text-lg"></i> Update Case';
+                submitBtn.classList.replace('bg-brand-600', 'bg-emerald-600');
+                submitBtn.classList.replace('hover:bg-brand-700', 'hover:bg-emerald-700');
+                submitBtn.classList.replace('shadow-brand-200', 'shadow-emerald-200');
+
+                cancelEditBtn.classList.remove('hidden');
+                document.getElementById('formContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            function exitEditMode() {
+                if (editingRow) {
+                    editingRow.classList.remove('bg-brand-50', 'editing-active');
+                    editingRow = null;
+                }
+
+                formHeader.classList.replace('bg-emerald-50', 'bg-slate-50/50');
+                formTitle.innerHTML = '<i class="ph-bold ph-plus"></i> New Lab Case';
+                formTitle.classList.replace('text-emerald-800', 'text-slate-800');
+
+                btnText.innerHTML = '<i class="ph-bold ph-plus-circle text-lg"></i> Save Case';
+                submitBtn.classList.replace('bg-emerald-600', 'bg-brand-600');
+                submitBtn.classList.replace('hover:bg-emerald-700', 'hover:bg-brand-700');
+                submitBtn.classList.replace('shadow-emerald-200', 'shadow-brand-200');
+
+                cancelEditBtn.classList.add('hidden');
+
+                form.reset();
+                document.getElementById('editingCaseId').value = '';
+                document.getElementById('dateSent').valueAsDate = new Date();
+                setExpectedDate();
+            }
+
+            cancelEditBtn.addEventListener('click', exitEditMode);
 
             function showFeedback(msg, isError = false) {
+                const feedbackMsg = document.getElementById('feedbackMsg');
                 feedbackMsg.textContent = msg;
-                feedbackMsg.className = `text-xs text-center mt-3 font-semibold h-4 transition-opacity duration-300 ${isError ? 'text-red-500' : 'text-emerald-600'}`;
+                feedbackMsg.className = `text-xs text-center mt-2 font-semibold h-4 transition-opacity duration-300 ${isError ? 'text-red-500' : 'text-emerald-600'}`;
                 feedbackMsg.style.opacity = '1';
                 setTimeout(() => { feedbackMsg.style.opacity = '0'; }, 3000);
             }
 
             // --- Form Submission ---
-            const form = document.getElementById('logForm');
-
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-
-                const initials = document.getElementById('initials').value.toUpperCase();
                 const dob = document.getElementById('dob').value;
-                const caseType = document.getElementById('caseType').value;
-                const dateSent = document.getElementById('dateSent').value;
-                const dateExpected = document.getElementById('dateExpected').value;
-                const notes = document.getElementById('notes').value.trim();
-                const status = document.querySelector('input[name="status"]:checked').value;
-
-                if(!/^\d{2}\/\d{2}$/.test(dob)) {
+                if (!/^\d{2}\/\d{2}$/.test(dob)) {
                     showFeedback('Please enter DOB in MM/YY format.', true);
                     return;
                 }
 
-                const statusVal = status === 'sent' ? 'sent' : 'returned';
+                await withSync(async () => {
+                    const initials = document.getElementById('initials').value.toUpperCase();
+                    const caseType = document.getElementById('caseType').value;
+                    const labProvider = document.getElementById('labProvider').value;
+                    const rawSentDate = document.getElementById('dateSent').value;
+                    const rawExpectedDate = document.getElementById('dateExpected').value;
+                    const notes = document.getElementById('notes').value.trim();
+                    const status = document.querySelector('input[name="status"]:checked').value;
 
-                const { data, error } = await sb
-                    .from('cases')
-                    .insert({
+                    const payload = {
                         initials,
                         dob,
                         case_type: caseType,
-                        date_sent: dateSent,
-                        date_expected: dateExpected,
+                        lab: labProvider,
+                        date_sent: rawSentDate,
+                        date_expected: rawExpectedDate,
                         notes,
-                        status: statusVal
-                    })
-                    .select()
-                    .single();
+                        status
+                    };
 
-                if (error) {
-                    showFeedback('Failed to save: ' + error.message, true);
-                    return;
-                }
+                    if (editingRow) {
+                        const id = document.getElementById('editingCaseId').value;
+                        const { data, error } = await sb
+                            .from('cases')
+                            .update(payload)
+                            .eq('id', id)
+                            .select()
+                            .single();
 
-                tableBody.appendChild(renderCaseRow(data));
-                sortTable(currentSortColumn, currentSortDirection);
-                updateStats();
+                        if (error) {
+                            showFeedback('Failed to update: ' + error.message, true);
+                            return;
+                        }
 
-                form.reset();
-                document.getElementById('dateSent').valueAsDate = new Date();
-                setExpectedDate();
-                document.getElementById('caseType').selectedIndex = 0;
+                        const tr = editingRow;
+                        syncRowAttributes(tr, data);
+                        rebuildRowHTML(tr);
+                        showFeedback(`Case for ${initials} updated.`);
+                        exitEditMode();
+                    } else {
+                        const { data, error } = await sb
+                            .from('cases')
+                            .insert(payload)
+                            .select()
+                            .single();
 
-                showFeedback(`Case for ${initials} successfully added.`);
+                        if (error) {
+                            showFeedback('Failed to save: ' + error.message, true);
+                            return;
+                        }
+
+                        tableBody.appendChild(buildRow(data));
+                        showFeedback(`Case for ${initials} saved.`);
+                        form.reset();
+                        document.getElementById('dateSent').valueAsDate = new Date();
+                        setExpectedDate();
+                    }
+
+                    if (currentView === 'archive') switchTab('active');
+
+                    applyFilters();
+                    sortTable(currentSortColumn, currentSortDirection);
+                });
             });
         });
     </script>
